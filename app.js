@@ -1,25 +1,32 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
-const passport = require('./config/passport'); // registra estrategias
-const sessionsRouter = require('./routes/sessions');
-
-const app = express();
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// Iniciamos passport (necesario si usar sesiones; igual para estrategias)
-app.use(passport.initialize());
+const passport = require('./config/passport'); 
 
 // Rutas
-app.use('/api/sessions', sessionsRouter);
+const authRoutes = require('./routes/auth.routes');
+const userRoutes = require('./routes/user.routes');
 
-// Conexión a MongoDB
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ecommerce';
-mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(()=> console.log('MongoDB conectado'))
-  .catch(err => console.error('Error Mongo:', err));
+const app = express();
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, ()=> console.log(`Servidor en puerto ${PORT}`));
+// Middlewares
+app.use(express.json());
+app.use(passport.initialize());
+
+// Conexión a Mongo
+const connectMongo = require('./config/mongo'); 
+connectMongo();
+
+// Rutas
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/products', require('./routes/products'));
+app.use('/api/purchases', require('./routes/purchases'))
+app.use('/api/cart', require('./routes/cart'));
+
+
+// Servidor
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en puerto ${PORT}`);
+});
